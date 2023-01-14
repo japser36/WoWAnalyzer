@@ -4,36 +4,33 @@ import { Icon } from 'interface';
 import { SpellLink } from 'interface';
 import { TooltipElement } from 'interface';
 import HealingValue from 'parser/shared/modules/HealingValue';
-import PropTypes from 'prop-types';
-import { Component } from 'react';
-import Toggle from 'react-toggle';
+import { FC, useState, useCallback } from 'react';
+import Toggle, { ToggleProps } from 'react-toggle';
 
-class BeaconHealingBreakdown extends Component {
-  static propTypes = {
-    totalHealingDone: PropTypes.instanceOf(HealingValue).isRequired,
-    totalBeaconHealing: PropTypes.instanceOf(HealingValue).isRequired,
-    beaconHealingBySource: PropTypes.object.isRequired,
-    fightDuration: PropTypes.number.isRequired,
-  };
+interface Props {
+  totalHealingDone: HealingValue;
+  totalBeaconHealing: HealingValue;
+  beaconHealingBySource: Record<string, any>; // TODO prefer better type. Converted from proptype `PropTypes.object.isRequired`
+  fightDuration: number;
+}
 
-  constructor() {
-    super();
-    this.state = {
-      absolute: false,
-    };
-  }
+const BeaconHealingBreakdown: FC<Props> = ({
+  totalHealingDone,
+  totalBeaconHealing,
+  beaconHealingBySource,
+  fightDuration,
+}) => {
+  // Component 'state'
+  const [absolute, setAbsolute] = useState<boolean>(false);
 
-  renderTableBody() {
-    const {
-      totalHealingDone,
-      totalBeaconHealing,
-      beaconHealingBySource,
-      fightDuration,
-    } = this.props;
+  // Callback handler for more efficient rendering (fixes eslint rule react/jsx-no-bind)
+  const absoluteToggleHandler = useCallback<Required<ToggleProps>['onChange']>(
+    (event) => setAbsolute(event.target.checked),
+    [setAbsolute],
+  );
 
-    const currentTotal = this.state.absolute
-      ? totalHealingDone.effective
-      : totalBeaconHealing.effective;
+  function renderTableBody() {
+    const currentTotal = absolute ? totalHealingDone.effective : totalBeaconHealing.effective;
     const highestHealing = Object.keys(beaconHealingBySource)
       .map((key) => beaconHealingBySource[key])
       .reduce((highest, source) => Math.max(highest, source.healing.effective), 1);
@@ -98,45 +95,43 @@ class BeaconHealingBreakdown extends Component {
     );
   }
 
-  render() {
-    return (
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th style={{ fontWeight: 700, textTransform: 'uppercase' }}>
-              <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.name">Name</Trans>
-            </th>
-            <th colSpan="3">
-              <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>
-                <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.beaconHealingCaused">
-                  Beacon healing caused
-                </Trans>
-              </span>
-              <div className="pull-right toggle-control">
-                <Toggle
-                  defaultChecked={false}
-                  icons={false}
-                  onChange={(event) => this.setState({ absolute: event.target.checked })}
-                  id="absolute-toggle"
-                />
-                <label htmlFor="absolute-toggle" style={{ marginLeft: '0.5em' }}>
-                  <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.relativeToTotalHealing">
-                    relative to total healing
-                  </Trans>
-                </label>
-              </div>
-            </th>
-            <th style={{ fontWeight: 700, textTransform: 'uppercase' }}>
-              <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.overheal">
-                Overheal
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th style={{ fontWeight: 700, textTransform: 'uppercase' }}>
+            <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.name">Name</Trans>
+          </th>
+          <th colSpan={3}>
+            <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>
+              <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.beaconHealingCaused">
+                Beacon healing caused
               </Trans>
-            </th>
-          </tr>
-        </thead>
-        {this.renderTableBody()}
-      </table>
-    );
-  }
-}
+            </span>
+            <div className="pull-right toggle-control">
+              <Toggle
+                defaultChecked={false}
+                icons={false}
+                onChange={absoluteToggleHandler}
+                id="absolute-toggle"
+              />
+              <label htmlFor="absolute-toggle" style={{ marginLeft: '0.5em' }}>
+                <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.relativeToTotalHealing">
+                  relative to total healing
+                </Trans>
+              </label>
+            </div>
+          </th>
+          <th style={{ fontWeight: 700, textTransform: 'uppercase' }}>
+            <Trans id="paladin.holy.modules.beacons.beaconHealingBreakdown.overheal">
+              Overheal
+            </Trans>
+          </th>
+        </tr>
+      </thead>
+      {renderTableBody()}
+    </table>
+  );
+};
 
 export default BeaconHealingBreakdown;
